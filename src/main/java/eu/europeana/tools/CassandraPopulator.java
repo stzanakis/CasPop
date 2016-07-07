@@ -21,7 +21,7 @@ import java.util.List;
 public class CassandraPopulator {
     private static final Logger logger = LogManager.getLogger();
 
-    public static void populateFirstProvider(Session session) {
+    public static void populateFirstProvider(Session session, int totalRecords, int batch) {
         Provider provider = RandomEntitiesGenerator.generateProvider();
         DataSet dataSet1 = RandomEntitiesGenerator.generateDataSet();
         DataSet dataSet2 = RandomEntitiesGenerator.generateDataSet();
@@ -37,22 +37,24 @@ public class CassandraPopulator {
         long elapsedTime = stopTime - startTime;
         logger.info("Populated first providers datasets in: " + elapsedTime + "ms");
 
-        int batch = 100;
         ArrayList<String> cloudIds = new ArrayList<String>(batch);
-        for(int i = 1; i <= batch; i++)
-            cloudIds.add(Integer.toString(i));
+        for(int j = 1; j <= totalRecords; j+=batch) {
+            for (int i = j; i < j + batch; i++) {
+                cloudIds.add(Integer.toString(i));
+            }
+        }
 
         startTime = System.currentTimeMillis();
-        populateRepresentations(session, provider, dataSet1, cloudIds);
+        populateRepresentations(session, provider, dataSet1, cloudIds, batch);
         stopTime = System.currentTimeMillis();
         elapsedTime = stopTime - startTime;
-        logger.info("Populated " + batch + " representations for provider" + provider.getProviderId() + " in: " + elapsedTime + "ms");
+        logger.info("Populated total:" + totalRecords + " representations for provider " + provider.getProviderId() + " in: " + elapsedTime + "ms");
 
         startTime = System.currentTimeMillis();
-        populateAssignments(session, provider, dataSet1, cloudIds);
+        populateAssignments(session, provider, dataSet1, cloudIds, batch);
         stopTime = System.currentTimeMillis();
         elapsedTime = stopTime - startTime;
-        logger.info("Populated " + batch + " assignments for provider" + provider.getProviderId() + " in: " + elapsedTime + "ms");
+        logger.info("Populated total: " + totalRecords + " assignments for provider " + provider.getProviderId() + " in: " + elapsedTime + "ms");
     }
 
     public static void populateDataSets(Session session, Provider provider, DataSet dataSet) {
@@ -82,47 +84,78 @@ public class CassandraPopulator {
         session.execute(cql);
     }
 
-    public static void populateAssignments(Session session, Provider provider, DataSet dataSet, List<String> cloudIds)
+    public static void populateAssignments(Session session, Provider provider, DataSet dataSet, List<String> cloudIds, int batch)
     {
         Date date = new Date();
         String revisionUpload = "UPLOAD-1";
-        for (String cloudId :
-                cloudIds) {
-            //data_set_assignments_cloud_id
-            String cql = "INSERT INTO " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SET_ASSIGNMENTS_CLOUD_ID +
-                    " (" + McsConstansts.PROVIDER_ID + ", " + McsConstansts.DATASET_ID + ", " + McsConstansts.CLOUD_ID + ", " + McsConstansts.SCHEMA_ID + ", " + McsConstansts.REVISION_ID + ", " + McsConstansts.REVISION_TIMESTAMP + ", " + McsConstansts.ACCEPTANCE + ", " + McsConstansts.PUBLISHED + ", " + McsConstansts.MARK_DELETED + ") " +
-                    "VALUES ('" + provider.getProviderId() + "', '" + dataSet.getDatasetId() + "', '" + cloudId + "', '" + dataSet.getSchemas().iterator().next() + "', '" + revisionUpload + "', '" + new Timestamp(date.getTime()) + "', " + true + ", " + true + ", " + false + ")";
-            session.execute(cql);
 
-            cql = "INSERT INTO " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SET_ASSIGNMENTS_PROVIDER_DATASET_SCHEMA +
-                    " (" + McsConstansts.PROVIDER_ID + ", " + McsConstansts.DATASET_ID + ", " + McsConstansts.CLOUD_ID + ", " + McsConstansts.SCHEMA_ID + ", " + McsConstansts.REVISION_ID + ", " + McsConstansts.REVISION_TIMESTAMP + ", " + McsConstansts.ACCEPTANCE + ", " + McsConstansts.PUBLISHED + ", " + McsConstansts.MARK_DELETED + ") " +
-                    "VALUES ('" + provider.getProviderId() + "', '" + dataSet.getDatasetId() + "', '" + cloudId + "', '" + dataSet.getSchemas().iterator().next() + "', '" + revisionUpload + "', '" + new Timestamp(date.getTime()) + "', " + true + ", " + true + ", " + false + ")";
-            session.execute(cql);
+        int totalRecords = cloudIds.size();
+        for(int j = 1; j <= totalRecords; j+=batch) {
+            long startTime = System.currentTimeMillis();
+            StringBuilder stringBuilder1 = new StringBuilder("BEGIN BATCH ");
+            StringBuilder stringBuilder2 = new StringBuilder("BEGIN BATCH ");
+            StringBuilder stringBuilder3 = new StringBuilder("BEGIN BATCH ");
+            for (int i = j; i < j + batch; i++) {
 
-            cql = "INSERT INTO " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SET_ASSIGNMENTS_PROVIDER_DATASET_REVISION +
-                    " (" + McsConstansts.PROVIDER_ID + ", " + McsConstansts.DATASET_ID + ", " + McsConstansts.CLOUD_ID + ", " + McsConstansts.SCHEMA_ID + ", " + McsConstansts.REVISION_ID + ", " + McsConstansts.REVISION_TIMESTAMP + ", " + McsConstansts.ACCEPTANCE + ", " + McsConstansts.PUBLISHED + ", " + McsConstansts.MARK_DELETED + ") " +
-                    "VALUES ('" + provider.getProviderId() + "', '" + dataSet.getDatasetId() + "', '" + cloudId + "', '" + dataSet.getSchemas().iterator().next() + "', '" + revisionUpload + "', '" + new Timestamp(date.getTime()) + "', " + true + ", " + true + ", " + false + ")";
-            session.execute(cql);
+                String cloudId = cloudIds.get(i-1);
+
+                //data_set_assignments_cloud_id
+                stringBuilder1.append("INSERT INTO " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SET_ASSIGNMENTS_CLOUD_ID +
+                        " (" + McsConstansts.PROVIDER_ID + ", " + McsConstansts.DATASET_ID + ", " + McsConstansts.CLOUD_ID + ", " + McsConstansts.SCHEMA_ID + ", " + McsConstansts.REVISION_ID + ", " + McsConstansts.REVISION_TIMESTAMP + ", " + McsConstansts.ACCEPTANCE + ", " + McsConstansts.PUBLISHED + ", " + McsConstansts.MARK_DELETED + ") " +
+                        "VALUES ('" + provider.getProviderId() + "', '" + dataSet.getDatasetId() + "', '" + cloudId + "', '" + dataSet.getSchemas().iterator().next() + "', '" + revisionUpload + "', '" + new Timestamp(date.getTime()) + "', " + true + ", " + true + ", " + false + ");");
+
+                stringBuilder2.append("INSERT INTO " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SET_ASSIGNMENTS_PROVIDER_DATASET_SCHEMA +
+                        " (" + McsConstansts.PROVIDER_ID + ", " + McsConstansts.DATASET_ID + ", " + McsConstansts.CLOUD_ID + ", " + McsConstansts.SCHEMA_ID + ", " + McsConstansts.REVISION_ID + ", " + McsConstansts.REVISION_TIMESTAMP + ", " + McsConstansts.ACCEPTANCE + ", " + McsConstansts.PUBLISHED + ", " + McsConstansts.MARK_DELETED + ") " +
+                        "VALUES ('" + provider.getProviderId() + "', '" + dataSet.getDatasetId() + "', '" + cloudId + "', '" + dataSet.getSchemas().iterator().next() + "', '" + revisionUpload + "', '" + new Timestamp(date.getTime()) + "', " + true + ", " + true + ", " + false + ");");
+
+                stringBuilder3.append("INSERT INTO " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SET_ASSIGNMENTS_PROVIDER_DATASET_REVISION +
+                        " (" + McsConstansts.PROVIDER_ID + ", " + McsConstansts.DATASET_ID + ", " + McsConstansts.CLOUD_ID + ", " + McsConstansts.SCHEMA_ID + ", " + McsConstansts.REVISION_ID + ", " + McsConstansts.REVISION_TIMESTAMP + ", " + McsConstansts.ACCEPTANCE + ", " + McsConstansts.PUBLISHED + ", " + McsConstansts.MARK_DELETED + ") " +
+                        "VALUES ('" + provider.getProviderId() + "', '" + dataSet.getDatasetId() + "', '" + cloudId + "', '" + dataSet.getSchemas().iterator().next() + "', '" + revisionUpload + "', '" + new Timestamp(date.getTime()) + "', " + true + ", " + true + ", " + false + ");");
+            }
+            stringBuilder1.append(" APPLY BATCH;");
+            stringBuilder2.append(" APPLY BATCH;");
+            stringBuilder3.append(" APPLY BATCH;");
+            session.execute(stringBuilder1.toString());
+            session.execute(stringBuilder2.toString());
+            session.execute(stringBuilder3.toString());
+
+            long stopTime = System.currentTimeMillis();
+            long elapsedTime = stopTime - startTime;
+            logger.info("Populated batch: " + batch + " assignments for provider " + provider.getProviderId() + " until now in: " + elapsedTime + "ms");
         }
     }
 
-    public static void populateRepresentations(Session session, Provider provider, DataSet dataSet, List<String> cloudIds)
+    public static void populateRepresentations(Session session, Provider provider, DataSet dataSet, List<String> cloudIds, int batch)
     {
         Date date = new Date();
         String revisionUpload = "UPLOAD-1";
-        for (String cloudId :
-                cloudIds) {
-            //representation_revisions
-            String cql = "INSERT INTO " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.REPRESENTATION_REVISIONS +
-                    " (" + McsConstansts.CLOUD_ID+ ", " + McsConstansts.SCHEMA_ID + ", " + McsConstansts.VERSION_ID + ", " + McsConstansts.REVISION_ID + ", " + McsConstansts.PROVIDER_ID + ", " + McsConstansts.PERSISTENT + ", " + McsConstansts.CREATION_DATE + ", " + McsConstansts.REVISION_TIMESTAMP + ") " +
-                    "VALUES ('" + cloudId + "', '" + dataSet.getSchemas().iterator().next() + "', " + UUIDs.timeBased() + ", '" + revisionUpload + "', '" + provider.getProviderId() + "', " + true + ", '" + new Timestamp(date.getTime()) + "', '" + new Timestamp(date.getTime()) + "')";
-            session.execute(cql);
 
-            //representation_revision_timestamp
-            cql = "INSERT INTO " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.REPRESENTATION_REVISIONS_TIMESTAMP +
-                    " (" + McsConstansts.CLOUD_ID+ ", " + McsConstansts.SCHEMA_ID + ", " + McsConstansts.VERSION_ID + ", " + McsConstansts.REVISION_ID + ", " + McsConstansts.PROVIDER_ID + ", " + McsConstansts.PERSISTENT + ", " + McsConstansts.CREATION_DATE + ", " + McsConstansts.REVISION_TIMESTAMP + ") " +
-                    "VALUES ('" + cloudId + "', '" + dataSet.getSchemas().iterator().next() + "', " + UUIDs.timeBased() + ", '" + revisionUpload + "', '" + provider.getProviderId() + "', " + true + ", '" + new Timestamp(date.getTime()) + "', '" + new Timestamp(date.getTime()) + "')";
-            session.execute(cql);
+        int totalRecords = cloudIds.size();
+        for(int j = 1; j <= totalRecords; j+=batch) {
+            long startTime = System.currentTimeMillis();
+            StringBuilder stringBuilder1 = new StringBuilder("BEGIN BATCH ");
+            StringBuilder stringBuilder2 = new StringBuilder("BEGIN BATCH ");
+            for (int i = j; i < j + batch; i++) {
+
+                String cloudId = cloudIds.get(i-1);
+                //representation_revisions
+                stringBuilder1.append("INSERT INTO " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.REPRESENTATION_REVISIONS +
+                        " (" + McsConstansts.CLOUD_ID + ", " + McsConstansts.SCHEMA_ID + ", " + McsConstansts.VERSION_ID + ", " + McsConstansts.REVISION_ID + ", " + McsConstansts.PROVIDER_ID + ", " + McsConstansts.PERSISTENT + ", " + McsConstansts.CREATION_DATE + ", " + McsConstansts.REVISION_TIMESTAMP + ") " +
+                        "VALUES ('" + cloudId + "', '" + dataSet.getSchemas().iterator().next() + "', " + UUIDs.timeBased() + ", '" + revisionUpload + "', '" + provider.getProviderId() + "', " + true + ", '" + new Timestamp(date.getTime()) + "', '" + new Timestamp(date.getTime()) + "');");
+
+                //representation_revision_timestamp
+                stringBuilder2.append("INSERT INTO " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.REPRESENTATION_REVISIONS_TIMESTAMP +
+                        " (" + McsConstansts.CLOUD_ID + ", " + McsConstansts.SCHEMA_ID + ", " + McsConstansts.VERSION_ID + ", " + McsConstansts.REVISION_ID + ", " + McsConstansts.PROVIDER_ID + ", " + McsConstansts.PERSISTENT + ", " + McsConstansts.CREATION_DATE + ", " + McsConstansts.REVISION_TIMESTAMP + ") " +
+                        "VALUES ('" + cloudId + "', '" + dataSet.getSchemas().iterator().next() + "', " + UUIDs.timeBased() + ", '" + revisionUpload + "', '" + provider.getProviderId() + "', " + true + ", '" + new Timestamp(date.getTime()) + "', '" + new Timestamp(date.getTime()) + "');");
+            }
+            stringBuilder1.append(" APPLY BATCH;");
+            stringBuilder2.append(" APPLY BATCH;");
+            session.execute(stringBuilder1.toString());
+            session.execute(stringBuilder2.toString());
+
+            long stopTime = System.currentTimeMillis();
+            long elapsedTime = stopTime - startTime;
+            logger.info("Populated batch: " + batch + " representations for provider " + provider.getProviderId() + " until now in: " + elapsedTime + "ms");
         }
 
     }

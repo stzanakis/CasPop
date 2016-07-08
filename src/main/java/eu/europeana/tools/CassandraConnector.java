@@ -23,12 +23,14 @@ public class CassandraConnector {
         String configurationFileName = "caspop.properties";
         PropertiesConfiguration propertiesConfiguration = Configuration.loadConfiguration(configurationDirectory, configurationFileName);
 
+        String[] ips = propertiesConfiguration.getStringArray("IPS");
+        String port = propertiesConfiguration.getProperty("PORT").toString();
 
-        String ip1 = propertiesConfiguration.getProperty("IP1").toString();
-        String port1 = propertiesConfiguration.getProperty("PORT1").toString();
-
-        new ArrayList<InetSocketAddress>();
-        cluster = Cluster.builder().addContactPointsWithPorts(new InetSocketAddress(ip1, Integer.parseInt(port1))).build();
+        ArrayList<InetSocketAddress> inetSocketAddresses = new ArrayList<InetSocketAddress>();
+        inetSocketAddresses.add(new InetSocketAddress(ips[0], Integer.parseInt(port)));
+        inetSocketAddresses.add(new InetSocketAddress(ips[1], Integer.parseInt(port)));
+        inetSocketAddresses.add(new InetSocketAddress(ips[2], Integer.parseInt(port)));
+        cluster = Cluster.builder().addContactPointsWithPorts(inetSocketAddresses).build();
     }
 
     public static CassandraConnector getInstance() throws FileNotFoundException, ConfigurationException {

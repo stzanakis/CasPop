@@ -121,7 +121,7 @@ public class CassandraPopulator {
 
             long stopTime = System.currentTimeMillis();
             long elapsedTime = stopTime - startTime;
-            logger.info("Populated batch: " + batch + " assignments for provider " + provider.getProviderId() + " until now in: " + elapsedTime + "ms");
+            logger.info("Populated batch: " + batch + " assignments for provider " + provider.getProviderId() + " in: " + elapsedTime + "ms. Until now populated: " + (batch + j-1));
         }
     }
 
@@ -155,7 +155,7 @@ public class CassandraPopulator {
 
             long stopTime = System.currentTimeMillis();
             long elapsedTime = stopTime - startTime;
-            logger.info("Populated batch: " + batch + " representations for provider " + provider.getProviderId() + " until now in: " + elapsedTime + "ms");
+            logger.info("Populated batch: " + batch + " representations for provider " + provider.getProviderId() + " in: " + elapsedTime + "ms. Until now populated: " + (batch + j-1));
         }
 
     }

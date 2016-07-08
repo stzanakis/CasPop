@@ -23,7 +23,7 @@ public class Main {
         Session session = cassandraConnector.getSession();
 
         long startTime = System.currentTimeMillis();
-        CassandraPopulator.populateFirstProvider(session, 1000, 100);
+        CassandraPopulator.populateFirstProvider(session, 1000000, 20);
         long stopTime = System.currentTimeMillis();
         long elapsedTime = stopTime - startTime;
         logger.info("Populated first provider in total time: " + elapsedTime + "ms");

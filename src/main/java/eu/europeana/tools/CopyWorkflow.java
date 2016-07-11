@@ -21,6 +21,21 @@ public class CopyWorkflow {
     private static final Logger logger = LogManager.getLogger();
     public static void copyFromProviderDatasetPublished(Session session, String providerFrom, String providerTo, String datasetFrom, String datasetTo, String schema, int fetchSize, int rowsThreshold, int limit)
     {
+        //populate the dataset
+        Provider provider = new Provider(providerTo);
+        HashSet<String> schemas = new HashSet<String>();
+        schemas.add(schema);
+        DataSet dataSet = new DataSet(datasetTo, "Test", schemas);
+        HashSet<DataSet> dataSets = new HashSet<DataSet>();
+        dataSets.add(dataSet);
+        provider.setDatasets(dataSets);
+
+        long startTime = System.currentTimeMillis();
+        CassandraPopulator.populateDataSets(session, provider, dataSet);
+        long stopTime = System.currentTimeMillis();
+        long elapsedTime = stopTime - startTime;
+        logger.info("Populated " + providerTo + " and " + datasetTo + " in: " + elapsedTime + "ms");
+
         String query = "SELECT * FROM " + McsConstansts.KEYSPACEMCS + "." + "data_set_assignments_provider_dataset_schema WHERE " +
                 McsConstansts.PROVIDER_ID + "='" + providerFrom + "' AND " + McsConstansts.DATASET_ID + "='" + datasetFrom + "' AND " + McsConstansts.SCHEMA_ID + "='"
                 + schema + "' AND " + McsConstansts.REVISION_TIMESTAMP + ">='1970-01-01 00:00:01" + "' AND "
@@ -41,40 +56,25 @@ public class CopyWorkflow {
             counter++;
 
             if(counter%fetchSize == 0) {
+                copyFromProviderDatasetPublished(session, provider, dataSet, schema, cloudIds);
+                System.out.println("Total processed until now: " + counter);
                 cloudIds = new ArrayList<String>(fetchSize);
-//                copyFromProviderDatasetPublished(session, providerTo, datasetTo, schema, cloudIds);
-//                System.out.println(counter);
             }
         }
-//        if(counter%fetchSize != 0)
-//            copyFromProviderDatasetPublished(session, providerTo, datasetTo, schema, cloudIds);
-//        System.out.println(counter);
+        if(counter%fetchSize != 0)
+            copyFromProviderDatasetPublished(session, provider, dataSet, schema, cloudIds);
+        System.out.println("Total processed: " + counter);
 
 
     }
 
-    private static void copyFromProviderDatasetPublished(Session session, String providerTo, String datasetTo, String schema, List<String> cloudIds)
+    private static void copyFromProviderDatasetPublished(Session session, Provider provider, DataSet dataSet, String schema, List<String> cloudIds)
     {
-        //populate the dataset
-        Provider provider = new Provider(providerTo);
-        HashSet<String> schemas = new HashSet<String>();
-        schemas.add(schema);
-        DataSet dataSet = new DataSet(datasetTo, "Test", schemas);
-        HashSet<DataSet> dataSets = new HashSet<DataSet>();
-        dataSets.add(dataSet);
-        provider.setDatasets(dataSets);
-
+        int batch = 100;
         long startTime = System.currentTimeMillis();
-        CassandraPopulator.populateDataSets(session, provider, dataSet);
+        CassandraPopulator.populateRepresentations(session, provider, dataSet, cloudIds, RevisionVocabulary.COPY.toString(), batch);
         long stopTime = System.currentTimeMillis();
         long elapsedTime = stopTime - startTime;
-        logger.info("Populated " + providerTo + " and " + datasetTo + " in: " + elapsedTime + "ms");
-
-        int batch = 100;
-        startTime = System.currentTimeMillis();
-        CassandraPopulator.populateRepresentations(session, provider, dataSet, cloudIds, RevisionVocabulary.COPY.toString(), batch);
-        stopTime = System.currentTimeMillis();
-        elapsedTime = stopTime - startTime;
         logger.info("Populated total:" + cloudIds.size() + " representations for provider " + provider.getProviderId() + " in: " + elapsedTime + "ms");
 
         startTime = System.currentTimeMillis();

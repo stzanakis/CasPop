@@ -23,7 +23,7 @@ public class CopyWorkflowMain {
         Session session = cassandraConnector.getSession();
 
         long startTime = System.currentTimeMillis();
-        CopyWorkflow.copyFromProviderDatasetPublished(session, "provider1", "providerFirst", "dataset1", "datasetFirst", "Schema1", 1000, 500, 0);
+        CopyWorkflow.copyFromProviderDatasetPublished(session, "provider1", "providerFirst", "dataset1", "datasetFirst", "Schema1", 1000, 500, 100000);
         long stopTime = System.currentTimeMillis();
         long elapsedTime = stopTime - startTime;
         logger.info("Copy provider dataset in total time: " + elapsedTime + "ms");

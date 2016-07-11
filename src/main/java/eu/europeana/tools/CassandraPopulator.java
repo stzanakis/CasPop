@@ -5,6 +5,7 @@ import com.datastax.driver.core.utils.UUIDs;
 import eu.europeana.model.DataSet;
 import eu.europeana.model.McsConstansts;
 import eu.europeana.model.Provider;
+import eu.europeana.model.RevisionVocabulary;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -45,13 +46,13 @@ public class CassandraPopulator {
         }
 
         startTime = System.currentTimeMillis();
-        populateRepresentations(session, provider, dataSet1, cloudIds, batch);
+        populateRepresentations(session, provider, dataSet1, cloudIds, RevisionVocabulary.UPLOAD.toString(), batch);
         stopTime = System.currentTimeMillis();
         elapsedTime = stopTime - startTime;
         logger.info("Populated total:" + totalRecords + " representations for provider " + provider.getProviderId() + " in: " + elapsedTime + "ms");
 
         startTime = System.currentTimeMillis();
-        populateAssignments(session, provider, dataSet1, cloudIds, batch);
+        populateAssignments(session, provider, dataSet1, cloudIds, RevisionVocabulary.UPLOAD.toString(), batch);
         stopTime = System.currentTimeMillis();
         elapsedTime = stopTime - startTime;
         logger.info("Populated total: " + totalRecords + " assignments for provider " + provider.getProviderId() + " in: " + elapsedTime + "ms");
@@ -84,10 +85,10 @@ public class CassandraPopulator {
         session.execute(cql);
     }
 
-    public static void populateAssignments(Session session, Provider provider, DataSet dataSet, List<String> cloudIds, int batch)
+    public static void populateAssignments(Session session, Provider provider, DataSet dataSet, List<String> cloudIds, String revisionPrefix, int batch)
     {
         Date date = new Date();
-        String revisionUpload = "UPLOAD-1";
+        String revisionUpload = revisionPrefix + "-1";
 
         int totalRecords = cloudIds.size();
         for(int j = 1; j <= totalRecords; j+=batch) {
@@ -125,10 +126,10 @@ public class CassandraPopulator {
         }
     }
 
-    public static void populateRepresentations(Session session, Provider provider, DataSet dataSet, List<String> cloudIds, int batch)
+    public static void populateRepresentations(Session session, Provider provider, DataSet dataSet, List<String> cloudIds, String revisionPrefix, int batch)
     {
         Date date = new Date();
-        String revisionUpload = "UPLOAD-1";
+        String revisionUpload = revisionPrefix + "-1";
 
         int totalRecords = cloudIds.size();
         for(int j = 1; j <= totalRecords; j+=batch) {

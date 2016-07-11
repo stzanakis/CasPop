@@ -5,6 +5,8 @@ package eu.europeana.model;
  * @since 2016-07-07
  */
 public enum RevisionVocabulary {
+    UPLOAD("UPLOAD"),
+    COPY("COPY"),
     TRANSFORM("TRANSFORM"),
     DEREFERENCE("DEREFERENCE"),
     ENRICH("ENRICH"),

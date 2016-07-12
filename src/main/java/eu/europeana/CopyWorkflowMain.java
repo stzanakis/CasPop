@@ -3,6 +3,7 @@ package eu.europeana;
 import com.datastax.driver.core.Session;
 import eu.europeana.tools.CassandraConnector;
 import eu.europeana.tools.CassandraPopulator;
+import eu.europeana.tools.CassandraTruncator;
 import eu.europeana.tools.CopyWorkflow;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.logging.log4j.LogManager;
@@ -42,9 +43,10 @@ public class CopyWorkflowMain {
             CopyWorkflow.copyFromProviderDatasetPublished(session, providerFrom, providerTo, datasetFrom, datasetTo, schema1, fetchSize, rowsThreshold, limit, batch);
             long stopTime = System.currentTimeMillis();
             long elapsedTime = stopTime - startTime;
-            logger.info("Copy providerFrom: " + providerFrom + " datasetFrom: " + datasetFrom + " to providerTo: " + providerTo
+            logger.info("Run: " + i + ", Copy providerFrom: " + providerFrom + " datasetFrom: " + datasetFrom + " to providerTo: " + providerTo
                     + " datasetTo: " + datasetTo + " in total time: " + elapsedTime + "ms");
 
+            CassandraTruncator.cleanAssignmentsRepresentationsFromProvider(session, providerTo, datasetTo, schema1, fetchSize, rowsThreshold, batch);
             totalRunsElapsedTime += elapsedTime;
             logger.info("Sleep for: " + sleepTime + "ms");
             Thread.sleep(sleepTime);

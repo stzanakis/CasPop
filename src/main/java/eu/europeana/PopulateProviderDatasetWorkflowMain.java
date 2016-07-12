@@ -45,7 +45,7 @@ public class PopulateProviderDatasetWorkflowMain {
             long elapsedTime = stopTime - startTime;
             logger.info("Run: " + i + ", Populate provider dataset workflow in total time: " + elapsedTime + "ms");
 
-            CassandraTruncator.mcsTruncate(session);
+            CassandraTruncator.assignmentsRepresentationsTruncate(session);
             totalRunsElapsedTime += elapsedTime;
             logger.info("Sleep for: " + sleepTime + "ms");
             Thread.sleep(sleepTime);

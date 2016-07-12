@@ -10,7 +10,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class CassandraTruncator {
     private static final Logger logger = LogManager.getLogger();
-    public static void mcsTruncate(Session session)
+    public static void assignmentsRepresentationsTruncate(Session session)
     {
         logger.info("Database starting truncation!");
 
@@ -29,5 +29,19 @@ public class CassandraTruncator {
         long stopTime = System.currentTimeMillis();
         long elapsedTime = stopTime - startTime;
         logger.info("Database truncated in " + elapsedTime + "ms");
+    }
+
+    public static void cleanAssignmentsRepresentationsFromProvider(String provider)
+    {
+        logger.info("Database cleanup from provider: " + provider);
+
+        long startTime = System.currentTimeMillis();
+
+
+
+
+        long stopTime = System.currentTimeMillis();
+        long elapsedTime = stopTime - startTime;
+        logger.info("Database cleaned in " + elapsedTime + "ms");
     }
 }

@@ -20,7 +20,7 @@ public class MCSTruncatorMain {
         CassandraConnector cassandraConnector = CassandraConnector.getInstance();
         Session session = cassandraConnector.getSession();
 
-        CassandraTruncator.mcsTruncate(session);
+        CassandraTruncator.assignmentsRepresentationsTruncate(session);
 
         cassandraConnector.closeSession();
         cassandraConnector.closeConnection();

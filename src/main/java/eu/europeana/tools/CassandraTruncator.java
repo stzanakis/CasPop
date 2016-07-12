@@ -69,12 +69,14 @@ public class CassandraTruncator {
             }
         }
 
-        String deleteCql = "DELETE FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SET_ASSIGNMENTS_PROVIDER_DATASET_REVISION + " WHERE "
-                + McsConstansts.PROVIDER_ID + "=" + provider + " AND " + McsConstansts.DATASET_ID + "=" + dataset;
-        session.execute(deleteCql);
-        deleteCql = "DELETE FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SET_ASSIGNMENTS_PROVIDER_DATASET_SCHEMA + " WHERE "
-                + McsConstansts.PROVIDER_ID + "=" + provider + " AND " + McsConstansts.DATASET_ID + "=" + dataset;
-        session.execute(deleteCql);
+//        String deleteCql = "DELETE FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SET_ASSIGNMENTS_PROVIDER_DATASET_REVISION + " WHERE "
+//                + McsConstansts.PROVIDER_ID + "=" + provider + " AND " + McsConstansts.DATASET_ID + "=" + dataset;
+        session.execute("DELETE FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SET_ASSIGNMENTS_PROVIDER_DATASET_REVISION + " WHERE "
+                + McsConstansts.PROVIDER_ID + "=?" + " AND " + McsConstansts.DATASET_ID + "=?", provider, dataset);
+//        deleteCql = "DELETE FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SET_ASSIGNMENTS_PROVIDER_DATASET_SCHEMA + " WHERE "
+//                + McsConstansts.PROVIDER_ID + "=" + provider + " AND " + McsConstansts.DATASET_ID + "=" + dataset;
+        session.execute("DELETE FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SET_ASSIGNMENTS_PROVIDER_DATASET_SCHEMA + " WHERE "
+                + McsConstansts.PROVIDER_ID + "=?" + " AND " + McsConstansts.DATASET_ID + "=?", provider, dataset);
 
         long stopTime = System.currentTimeMillis();
         long elapsedTime = stopTime - startTime;
@@ -85,24 +87,39 @@ public class CassandraTruncator {
         int totalRecords = cloudIds.size();
         for (int j = 1; j <= totalRecords; j += batch) {
             long startTime = System.currentTimeMillis();
-            StringBuilder stringBuilder1 = new StringBuilder("BEGIN BATCH ");
-            StringBuilder stringBuilder2 = new StringBuilder("BEGIN BATCH ");
-            StringBuilder stringBuilder3 = new StringBuilder("BEGIN BATCH ");
+            PreparedStatement ps1 = session.prepare("DELETE FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SET_ASSIGNMENTS_CLOUD_ID + " WHERE "
+                    + McsConstansts.CLOUD_ID + "=?" + " AND " + McsConstansts.PROVIDER_ID + "=?" + " AND " + McsConstansts.DATASET_ID + "=?" + " AND " + McsConstansts.SCHEMA_ID + "=?");
+            PreparedStatement ps2 = session.prepare("DELETE FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.REPRESENTATION_REVISIONS + " WHERE "
+                    + McsConstansts.CLOUD_ID + "=?");
+            PreparedStatement ps3 = session.prepare("DELETE FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.REPRESENTATION_REVISIONS_TIMESTAMP + " WHERE "
+                    + McsConstansts.CLOUD_ID + "=?" + " AND " + McsConstansts.SCHEMA_ID + "=?");
+//            StringBuilder stringBuilder1 = new StringBuilder("BEGIN BATCH ");
+//            StringBuilder stringBuilder2 = new StringBuilder("BEGIN BATCH ");
+//            StringBuilder stringBuilder3 = new StringBuilder("BEGIN BATCH ");
+            BatchStatement batch1 = new BatchStatement();
+            BatchStatement batch2 = new BatchStatement();
+            BatchStatement batch3 = new BatchStatement();
             for (int i = j; i < j + batch; i++) {
                 String cloudId = cloudIds.get(i-1);
-                stringBuilder1.append("DELETE FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SET_ASSIGNMENTS_CLOUD_ID + " WHERE "
-                        + McsConstansts.CLOUD_ID + "=" + cloudId + McsConstansts.PROVIDER_ID + "=" + provider + " AND " + McsConstansts.DATASET_ID + "=" + dataset + " AND " + McsConstansts.SCHEMA_ID + "=" + schema);
-                stringBuilder2.append("DELETE FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.REPRESENTATION_REVISIONS + " WHERE "
-                        + McsConstansts.CLOUD_ID + "=" + cloudId);
-                stringBuilder3.append("DELETE FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.REPRESENTATION_REVISIONS_TIMESTAMP + " WHERE "
-                        + McsConstansts.CLOUD_ID + "=" + cloudId + " AND " + McsConstansts.SCHEMA_ID + "=" + schema);
+                batch1.add(ps1.bind(cloudId, provider, dataset, schema));
+                batch2.add(ps2.bind(cloudId));
+                batch3.add(ps3.bind(cloudId, schema));
+//                stringBuilder1.append("DELETE FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SET_ASSIGNMENTS_CLOUD_ID + " WHERE "
+//                        + McsConstansts.CLOUD_ID + "=" + cloudId + McsConstansts.PROVIDER_ID + "=" + provider + " AND " + McsConstansts.DATASET_ID + "=" + dataset + " AND " + McsConstansts.SCHEMA_ID + "=" + schema);
+//                stringBuilder2.append("DELETE FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.REPRESENTATION_REVISIONS + " WHERE "
+//                        + McsConstansts.CLOUD_ID + "=" + cloudId);
+//                stringBuilder3.append("DELETE FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.REPRESENTATION_REVISIONS_TIMESTAMP + " WHERE "
+//                        + McsConstansts.CLOUD_ID + "=" + cloudId + " AND " + McsConstansts.SCHEMA_ID + "=" + schema);
             }
-            stringBuilder1.append(" APPLY BATCH;");
-            stringBuilder2.append(" APPLY BATCH;");
-            stringBuilder3.append(" APPLY BATCH;");
-            session.execute(stringBuilder1.toString());
-            session.execute(stringBuilder2.toString());
-            session.execute(stringBuilder3.toString());
+//            stringBuilder1.append(" APPLY BATCH;");
+//            stringBuilder2.append(" APPLY BATCH;");
+//            stringBuilder3.append(" APPLY BATCH;");
+//            session.execute(stringBuilder1.toString());
+//            session.execute(stringBuilder2.toString());
+//            session.execute(stringBuilder3.toString());
+            session.execute(batch1);
+            session.execute(batch2);
+            session.execute(batch3);
 
             long stopTime = System.currentTimeMillis();
             long elapsedTime = stopTime - startTime;

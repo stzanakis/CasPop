@@ -34,7 +34,8 @@ public class CopyWorkflow {
                 rs.fetchMoreResults();
 
             Row row = iterator.next();
-            cloudIds.add(row.getString("cloud_id"));
+            //Add a higher value to differentiate since there is no persistent login of the generation of cloud_id
+            cloudIds.add(Integer.toString(Integer.parseInt(row.getString("cloud_id")) + 1000000));
             counter++;
 
             if(counter%fetchSize == 0) {
@@ -46,8 +47,6 @@ public class CopyWorkflow {
         if(counter%fetchSize != 0)
             populateToProviderDatasetPublished(session, providerTo, datasetTo, schema, cloudIds, batch);
         logger.info("Total processed: " + counter);
-
-
     }
 
     private static void populateToProviderDatasetPublished(Session session, String provider, String dataset, String schema, List<String> cloudIds, int batch)

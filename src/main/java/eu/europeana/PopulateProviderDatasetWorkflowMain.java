@@ -30,7 +30,7 @@ public class PopulateProviderDatasetWorkflowMain {
         int runTimes = 10;
         long totalRunsElapsedTime = 0;
         int totalRecords = 100000;
-        int batch = 50;
+        int batch = 100;
         int sleepTime = 5000;
         for(int i = 0; i < runTimes; i++) {
             long startTime = System.currentTimeMillis();

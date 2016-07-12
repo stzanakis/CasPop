@@ -36,12 +36,11 @@ public class CassandraTruncator {
         logger.info("Database truncated in " + elapsedTime + "ms");
     }
 
-    public static void cleanAssignmentsRepresentationsFromProvider(Session session, String provider, int fetchSize, int rowsThreshold)
+    public static void cleanAssignmentsRepresentationsFromProvider(Session session, String provider, String dataset, String schema, int fetchSize, int rowsThreshold, int batch)
     {
         logger.info("Database cleanup from provider: " + provider);
 
         long startTime = System.currentTimeMillis();
-
 
         String query = "SELECT * FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.REPRESENTATION_REVISIONS + " WHERE "
                 + McsConstansts.PROVIDER_ID + "=" + provider;
@@ -64,7 +63,7 @@ public class CassandraTruncator {
 
             if(counter%fetchSize == 0) {
                 //Delete assignments from everywhere
-                deleteCloudIds(provider, cloudIds);
+                deleteCloudIds(session, provider, dataset, schema, cloudIds, batch);
                 logger.info("Total processed until now: " + counter);
                 cloudIds = new ArrayList<String>(fetchSize);
             }
@@ -76,14 +75,42 @@ public class CassandraTruncator {
         logger.info("Database cleaned in " + elapsedTime + "ms");
     }
 
-    private static void deleteCloudIds(String provider, List<String> cloudIds) {
-//        int totalRecords = cloudIds.size();
-//        for (int j = 1; j <= totalRecords; j += batch) {
-//            StringBuilder stringBuilder1 = new StringBuilder("BEGIN BATCH ");
-//            for (int i = j; i < j + batch; i++) {
-//                stringBuilder1 = "DELETE FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SET_ASSIGNMENTS_CLOUD_ID + " WHERE "
-//                        + McsConstansts.CLOUD_ID + "=" + cloudId;
-//            }
-//        }
+    private static void deleteCloudIds(Session session, String provider, String dataset, String schema, List<String> cloudIds, int batch) {
+        int totalRecords = cloudIds.size();
+        for (int j = 1; j <= totalRecords; j += batch) {
+            long startTime = System.currentTimeMillis();
+            StringBuilder stringBuilder1 = new StringBuilder("BEGIN BATCH ");
+            StringBuilder stringBuilder2 = new StringBuilder("BEGIN BATCH ");
+            StringBuilder stringBuilder3 = new StringBuilder("BEGIN BATCH ");
+            StringBuilder stringBuilder4 = new StringBuilder("BEGIN BATCH ");
+            StringBuilder stringBuilder5 = new StringBuilder("BEGIN BATCH ");
+            for (int i = j; i < j + batch; i++) {
+                String cloudId = cloudIds.get(i-1);
+                stringBuilder1.append("DELETE FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SET_ASSIGNMENTS_CLOUD_ID + " WHERE "
+                        + McsConstansts.CLOUD_ID + "=" + cloudId);
+                stringBuilder2.append("DELETE FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SET_ASSIGNMENTS_PROVIDER_DATASET_REVISION + " WHERE "
+                        + McsConstansts.PROVIDER_ID + "=" + provider + " AND " + McsConstansts.DATASET_ID + "=" + dataset + " AND " + McsConstansts.CLOUD_ID + "=" + cloudId);
+                stringBuilder3.append("DELETE FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SET_ASSIGNMENTS_PROVIDER_DATASET_SCHEMA + " WHERE "
+                        + McsConstansts.PROVIDER_ID + "=" + provider + " AND " + McsConstansts.DATASET_ID + "=" + dataset + " AND " + McsConstansts.CLOUD_ID + "=" + cloudId);
+                stringBuilder4.append("DELETE FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.REPRESENTATION_REVISIONS + " WHERE "
+                        + McsConstansts.CLOUD_ID + "=" + cloudId);
+                stringBuilder5.append("DELETE FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.REPRESENTATION_REVISIONS_TIMESTAMP + " WHERE "
+                        + McsConstansts.CLOUD_ID + "=" + cloudId + " AND " + McsConstansts.SCHEMA_ID + "=" + schema);
+            }
+            stringBuilder1.append(" APPLY BATCH;");
+            stringBuilder2.append(" APPLY BATCH;");
+            stringBuilder3.append(" APPLY BATCH;");
+            stringBuilder4.append(" APPLY BATCH;");
+            stringBuilder5.append(" APPLY BATCH;");
+            session.execute(stringBuilder1.toString());
+            session.execute(stringBuilder2.toString());
+            session.execute(stringBuilder3.toString());
+            session.execute(stringBuilder4.toString());
+            session.execute(stringBuilder5.toString());
+
+            long stopTime = System.currentTimeMillis();
+            long elapsedTime = stopTime - startTime;
+            logger.info("Deleted batch: " + batch + " assignments and representations for provider: " + provider + " and dataset: " + dataset + " in: " + elapsedTime + "ms. Until now populated: " + (batch + j-1));
+        }
     }
 }

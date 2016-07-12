@@ -3,11 +3,8 @@ package eu.europeana;
 import com.datastax.driver.core.Session;
 import eu.europeana.tools.CassandraConnector;
 import eu.europeana.tools.CassandraTruncator;
-import org.apache.commons.configuration.ConfigurationException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.io.FileNotFoundException;
 
 /**
  * @author Simon Tzanakis (Simon.Tzanakis@europeana.eu)
@@ -15,15 +12,10 @@ import java.io.FileNotFoundException;
  */
 public class MCSTruncatorMain {
     private static final Logger logger = LogManager.getLogger();
-    public static void main(String args[]) throws FileNotFoundException, ConfigurationException {
+    public static void main(String args[]) throws Exception {
         logger.info("MCS Truncator");
-        CassandraConnector cassandraConnector = CassandraConnector.getInstance();
-        Session session = cassandraConnector.getSession();
-
-        CassandraTruncator.assignmentsRepresentationsTruncate(session);
-
-        cassandraConnector.closeSession();
-        cassandraConnector.closeConnection();
-
+        try(CassandraConnector cassandraConnector = CassandraConnector.getInstance(); Session session = cassandraConnector.getSession()) {
+            CassandraTruncator.assignmentsRepresentationsTruncate(session);
+        }
     }
 }

@@ -5,11 +5,8 @@ import eu.europeana.tools.CassandraConnector;
 import eu.europeana.tools.CassandraPopulator;
 import eu.europeana.tools.CassandraTruncator;
 import eu.europeana.tools.CopyWorkflow;
-import org.apache.commons.configuration.ConfigurationException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.io.FileNotFoundException;
 
 /**
  * @author Simon Tzanakis (Simon.Tzanakis@europeana.eu)
@@ -18,7 +15,7 @@ import java.io.FileNotFoundException;
 public class CopyWorkflowMain {
     private static final Logger logger = LogManager.getLogger();
 
-    public static void main(String args[]) throws FileNotFoundException, ConfigurationException, InterruptedException {
+    public static void main(String args[]) throws Exception {
         logger.info("Copy workflow");
         String providerFrom = "provider1";
         String providerTo = "provider2";
@@ -54,6 +51,6 @@ public class CopyWorkflowMain {
         logger.info("Average speed of " + runTimes + " run times is: " + totalRunsElapsedTime/runTimes + "ms");
 
         cassandraConnector.closeSession();
-        cassandraConnector.closeConnection();
+        cassandraConnector.close();
     }
 }

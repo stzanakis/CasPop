@@ -3,12 +3,8 @@ package eu.europeana;
 import com.datastax.driver.core.Session;
 import eu.europeana.tools.CassandraConnector;
 import eu.europeana.tools.CassandraPopulator;
-import eu.europeana.tools.CassandraTruncator;
-import org.apache.commons.configuration.ConfigurationException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.io.FileNotFoundException;
 
 /**
  * @author Simon Tzanakis (Simon.Tzanakis@europeana.eu)
@@ -17,21 +13,21 @@ import java.io.FileNotFoundException;
 public class PopulateProviderDatasetWorkflowMain {
     private static final Logger logger = LogManager.getLogger();
 
-    public static void main(String args[]) throws FileNotFoundException, ConfigurationException, InterruptedException {
+    public static void main(String args[]) throws Exception {
         System.out.println("How you doin?");
         String provider1 = "provider1";
         String dataset1 = "dataset1";
         String dataset2 = "dataset2";
         String schema1 = "schema1";
 
-        CassandraConnector cassandraConnector = CassandraConnector.getInstance();
 
-        int runTimes = 10;
+
+        int runTimes = 1;
         long totalRunsElapsedTime = 0;
-        int totalRecords = 100000;
+        int totalRecords = 1000;
         int batch = 100;
         int sleepTime = 5000;
-        try(Session session = cassandraConnector.getSession()) {
+        try(CassandraConnector cassandraConnector = CassandraConnector.getInstance(); Session session = cassandraConnector.getSession()) {
             for (int i = 0; i < runTimes; i++) {
                 long startTime = System.currentTimeMillis();
                 //Create first provider dataset information
@@ -45,7 +41,7 @@ public class PopulateProviderDatasetWorkflowMain {
                 long elapsedTime = stopTime - startTime;
                 logger.info("Run: " + i + ", Populate provider dataset workflow in total time: " + elapsedTime + "ms");
 
-                CassandraTruncator.assignmentsRepresentationsTruncate(session);
+//                CassandraTruncator.assignmentsRepresentationsTruncate(session);
                 totalRunsElapsedTime += elapsedTime;
                 logger.info("Sleep for: " + sleepTime + "ms");
                 Thread.sleep(sleepTime);

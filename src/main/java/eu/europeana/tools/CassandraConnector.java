@@ -13,7 +13,7 @@ import java.util.ArrayList;
  * @author Simon Tzanakis (Simon.Tzanakis@europeana.eu)
  * @since 2016-07-07
  */
-public class CassandraConnector {
+public class CassandraConnector implements AutoCloseable {
     private static CassandraConnector instance = null;
     private Session session;
     private Cluster cluster;
@@ -49,7 +49,9 @@ public class CassandraConnector {
         session.close();
     }
 
-    public void closeConnection() {
+    @Override
+    public void close() throws Exception {
+        session.close();
         cluster.close();
     }
 }

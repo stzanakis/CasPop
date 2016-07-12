@@ -25,36 +25,32 @@ public class PopulateProviderDatasetWorkflowMain {
         String schema1 = "schema1";
 
         CassandraConnector cassandraConnector = CassandraConnector.getInstance();
-        Session session = cassandraConnector.getSession();
 
         int runTimes = 10;
         long totalRunsElapsedTime = 0;
         int totalRecords = 100000;
         int batch = 100;
         int sleepTime = 5000;
-        for(int i = 0; i < runTimes; i++) {
-            long startTime = System.currentTimeMillis();
-            //Create first provider dataset information
-            CassandraPopulator.createProviderDataset(session, provider1, dataset1, schema1);
+        try(Session session = cassandraConnector.getSession()) {
+            for (int i = 0; i < runTimes; i++) {
+                long startTime = System.currentTimeMillis();
+                //Create first provider dataset information
+                CassandraPopulator.createProviderDataset(session, provider1, dataset1, schema1);
 //        CassandraPopulator.createProviderDataset(session, provider1, dataset2, schema1);
 
-            //Populate with data the dataset
-            CassandraPopulator.fillInDataset(session, provider1, dataset1, schema1, totalRecords, batch);
+                //Populate with data the dataset
+                CassandraPopulator.fillInDataset(session, provider1, dataset1, schema1, totalRecords, batch);
 
-            long stopTime = System.currentTimeMillis();
-            long elapsedTime = stopTime - startTime;
-            logger.info("Run: " + i + ", Populate provider dataset workflow in total time: " + elapsedTime + "ms");
+                long stopTime = System.currentTimeMillis();
+                long elapsedTime = stopTime - startTime;
+                logger.info("Run: " + i + ", Populate provider dataset workflow in total time: " + elapsedTime + "ms");
 
-            CassandraTruncator.assignmentsRepresentationsTruncate(session);
-            totalRunsElapsedTime += elapsedTime;
-            logger.info("Sleep for: " + sleepTime + "ms");
-            Thread.sleep(sleepTime);
+                CassandraTruncator.assignmentsRepresentationsTruncate(session);
+                totalRunsElapsedTime += elapsedTime;
+                logger.info("Sleep for: " + sleepTime + "ms");
+                Thread.sleep(sleepTime);
+            }
+            logger.info("Average speed of " + runTimes + " run times is: " + totalRunsElapsedTime/runTimes + "ms");
         }
-        logger.info("Average speed of " + runTimes + " run times is: " + totalRunsElapsedTime/runTimes + "ms");
-
-
-        cassandraConnector.closeSession();
-        cassandraConnector.closeConnection();
-
     }
 }

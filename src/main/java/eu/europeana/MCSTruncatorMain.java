@@ -16,6 +16,7 @@ import java.io.FileNotFoundException;
 public class MCSTruncatorMain {
     private static final Logger logger = LogManager.getLogger();
     public static void main(String args[]) throws FileNotFoundException, ConfigurationException {
+        logger.info("MCS Truncator");
         CassandraConnector cassandraConnector = CassandraConnector.getInstance();
         Session session = cassandraConnector.getSession();
 

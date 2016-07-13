@@ -42,8 +42,8 @@ public class CassandraTruncator {
 
         long startTime = System.currentTimeMillis();
 
-        String query = "SELECT * FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.REPRESENTATION_REVISIONS + " WHERE "
-                + McsConstansts.PROVIDER_ID + "=" + provider;
+        String query = "SELECT * FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SET_ASSIGNMENTS_PROVIDER_DATASET_REVISION + " WHERE "
+                + McsConstansts.PROVIDER_ID + "='" + provider + "' AND " + McsConstansts.DATASET_ID + "='" + dataset + "'";
 
         List<String> cloudIds = new ArrayList<String>(fetchSize);
         Statement stmt = new SimpleStatement(query);

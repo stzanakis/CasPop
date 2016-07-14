@@ -18,6 +18,9 @@ public class XsltWorkflow {
     private static final Logger logger = LogManager.getLogger();
     public static void transformRecordsFromRevision(Session session, String provider, String dataset, String schema, String revision, String newSchema, int fetchSize, int rowsThreshold, int batch)
     {
+        //Create the new dataset schema
+        CassandraPopulator.insertDatasetSchema(session, provider, dataset, newSchema);
+
         List<String> cloudIds = new ArrayList<String>(fetchSize);
         Statement stmt = new SimpleStatement("SELECT cloud_id FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SET_ASSIGNMENTS_PROVIDER_DATASET_REVISION
                 + " WHERE " + McsConstansts.PROVIDER_ID + "=?" + " AND " + McsConstansts.DATASET_ID + "=?" + " AND " + McsConstansts.SCHEMA_ID + "=?"

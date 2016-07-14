@@ -1,8 +1,6 @@
 package eu.europeana.tools;
 
-import com.datastax.driver.core.BatchStatement;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.Session;
+import com.datastax.driver.core.*;
 import com.datastax.driver.core.utils.UUIDs;
 import eu.europeana.model.McsConstansts;
 import eu.europeana.model.RevisionVocabulary;
@@ -76,9 +74,45 @@ public class CassandraPopulator {
         //Dataset_schemas
         session.execute(
                 "INSERT INTO " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATASET_SCHEMAS +
-                        " (" + McsConstansts.PROVIDER_ID + ", " + McsConstansts.DATASET_ID + ", " + McsConstansts.SCHEMA_ID + ") " +
+                        " (" + McsConstansts.PROVIDER_ID + ", " + McsConstansts.DATASET_ID + ", " + McsConstansts.SCHEMA_ID + ", " + McsConstansts.CREATION_DATE + ", " + McsConstansts.UPDATED_TIMESTAMP + ") " +
                         "VALUES (?, ?, ?)",
-                provider, dataset, schema);
+                provider, dataset, schema, new Timestamp(date.getTime()), new Timestamp(date.getTime()));
+    }
+
+    public static void insertDatasetSchema(Session session, String provider, String dataset, String schema) {
+        Date date = new Date();
+        session.execute("INSERT INTO " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATASET_SCHEMAS
+                + " (" + McsConstansts.PROVIDER_ID + "," + McsConstansts.DATASET_ID + "," + McsConstansts.SCHEMA_ID + ", " + McsConstansts.CREATION_DATE + ", " + McsConstansts.UPDATED_TIMESTAMP + ") "
+                + "VALUES (?, ?, ?, ?, ?)", provider, dataset, schema, new Timestamp(date.getTime()), new Timestamp(date.getTime()));
+
+        //Dataset has been updated so update the datasets tables
+        //Retrieve creation_date and updated_timestamp first
+        ResultSet resultSet = session.execute("SELECT " + McsConstansts.CREATION_DATE + "," + McsConstansts.UPDATED_TIMESTAMP + " FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SETS
+                + " WHERE " + McsConstansts.PROVIDER_ID + "=?" + " AND " + McsConstansts.DATASET_ID + "=?", provider, dataset);
+        Row row = resultSet.iterator().next();
+        String creationDate = row.getString("creation_date");
+        String updated_timestamp = row.getString("updated_timestamp");
+
+        session.execute("UPDATE " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SETS + " SET " + McsConstansts.CREATION_DATE + "=?," + McsConstansts.UPDATED_TIMESTAMP + "=?", new Timestamp(date.getTime()), new Timestamp(date.getTime()));
+
+        //Here we need to delete first because the date is part of the primary key
+        session.execute("DELETE FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SETS_CREATED + " WHERE "
+                + McsConstansts.PROVIDER_ID + "=?" + " AND " + McsConstansts.DATASET_ID + "=?" + " AND " + McsConstansts.CREATION_DATE + "=?"
+                , provider, dataset, creationDate);
+        session.execute(
+                "INSERT INTO " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SETS_CREATED +
+                        " (" + McsConstansts.PROVIDER_ID + ", " + McsConstansts.DATASET_ID + ", " + McsConstansts.CREATION_DATE + ", " + McsConstansts.UPDATED_TIMESTAMP + ", " + McsConstansts.DESCRIPTION + ") " +
+                        "VALUES (?, ?, ?, ?, ?)",
+                provider, dataset, creationDate, new Timestamp(date.getTime()), dataset);
+
+        session.execute("DELETE FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SETS_UPDATED + " WHERE "
+                        + McsConstansts.PROVIDER_ID + "=?" + " AND " + McsConstansts.DATASET_ID + "=?" + " AND " + McsConstansts.UPDATED_TIMESTAMP + "=?"
+                , provider, dataset, updated_timestamp);
+        session.execute(
+                "INSERT INTO " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SETS_UPDATED +
+                        " (" + McsConstansts.PROVIDER_ID + ", " + McsConstansts.DATASET_ID + ", " + McsConstansts.CREATION_DATE + ", " + McsConstansts.UPDATED_TIMESTAMP + ", " + McsConstansts.DESCRIPTION + ") " +
+                        "VALUES (?, ?, ?, ?, ?)",
+                provider, dataset, creationDate, new Timestamp(date.getTime()), dataset);
     }
 
     public static void populateAssignments(Session session, String  provider, String dataset, String schema, List<String> cloudIds, String revisionPrefix, int batch)

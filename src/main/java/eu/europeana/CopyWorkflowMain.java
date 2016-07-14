@@ -30,7 +30,8 @@ public class CopyWorkflowMain {
 
         int runTimes = 1;
         long totalRunsElapsedTime = 0;
-        int batch = 50;
+        long[] firstThree = new long[3];
+        int batch = 100;
         int sleepTime = 5000;
         int fetchSize = 1000;
         int rowsThreshold = 500;
@@ -40,14 +41,17 @@ public class CopyWorkflowMain {
             CopyWorkflow.copyFromProviderDatasetPublished(session, providerFrom, providerTo, datasetFrom, datasetTo, schema1, fetchSize, rowsThreshold, limit, batch);
             long stopTime = System.currentTimeMillis();
             long elapsedTime = stopTime - startTime;
-            logger.info("Run: " + i + ", Copy providerFrom: " + providerFrom + " datasetFrom: " + datasetFrom + " to providerTo: " + providerTo
+            logger.info("Run: " + (i+1) + ", Copy providerFrom: " + providerFrom + " datasetFrom: " + datasetFrom + " to providerTo: " + providerTo
                     + " datasetTo: " + datasetTo + " in total time: " + elapsedTime + "ms");
 
-            CassandraTruncator.cleanAssignmentsRepresentationsFromProvider(session, providerTo, datasetTo, schema1, fetchSize, rowsThreshold, batch);
+            if(i < 3)
+                firstThree[i] = elapsedTime;
             totalRunsElapsedTime += elapsedTime;
             logger.info("Sleep for: " + sleepTime + "ms");
             Thread.sleep(sleepTime);
         }
+//        CassandraTruncator.cleanAssignmentsRepresentationsFromProvider(session, providerTo, datasetTo, schema1, fetchSize, rowsThreshold, batch);
+        logger.info("First three runs: {}ms, {}ms, {}ms", firstThree[0], firstThree[1], firstThree[2]);
         logger.info("Average speed of " + runTimes + " run times is: " + totalRunsElapsedTime/runTimes + "ms");
 
         cassandraConnector.closeSession();

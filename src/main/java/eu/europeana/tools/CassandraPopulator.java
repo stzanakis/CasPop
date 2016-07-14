@@ -90,29 +90,31 @@ public class CassandraPopulator {
         ResultSet resultSet = session.execute("SELECT " + McsConstansts.CREATION_DATE + "," + McsConstansts.UPDATED_TIMESTAMP + " FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SETS
                 + " WHERE " + McsConstansts.PROVIDER_ID + "=?" + " AND " + McsConstansts.DATASET_ID + "=?", provider, dataset);
         Row row = resultSet.iterator().next();
-        String creationDate = row.getString("creation_date");
-        String updated_timestamp = row.getString("updated_timestamp");
+        Date creationDate = row.getTimestamp("creation_date");
+        Date updated_timestamp = row.getTimestamp("updated_timestamp");
 
-        session.execute("UPDATE " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SETS + " SET " + McsConstansts.CREATION_DATE + "=?," + McsConstansts.UPDATED_TIMESTAMP + "=?", new Timestamp(date.getTime()), new Timestamp(date.getTime()));
+        session.execute("UPDATE " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SETS + " SET "
+                + McsConstansts.CREATION_DATE + "=?," + McsConstansts.UPDATED_TIMESTAMP + "=?" + " WHERE " + McsConstansts.PROVIDER_ID + "=?" + " AND " + McsConstansts.DATASET_ID + "=?"
+                , new Timestamp(date.getTime()), new Timestamp(date.getTime()), provider, dataset);
 
         //Here we need to delete first because the date is part of the primary key
         session.execute("DELETE FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SETS_CREATED + " WHERE "
                 + McsConstansts.PROVIDER_ID + "=?" + " AND " + McsConstansts.DATASET_ID + "=?" + " AND " + McsConstansts.CREATION_DATE + "=?"
-                , provider, dataset, creationDate);
+                , provider, dataset, new Timestamp(creationDate.getTime()));
         session.execute(
                 "INSERT INTO " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SETS_CREATED +
                         " (" + McsConstansts.PROVIDER_ID + ", " + McsConstansts.DATASET_ID + ", " + McsConstansts.CREATION_DATE + ", " + McsConstansts.UPDATED_TIMESTAMP + ", " + McsConstansts.DESCRIPTION + ") " +
                         "VALUES (?, ?, ?, ?, ?)",
-                provider, dataset, creationDate, new Timestamp(date.getTime()), dataset);
+                provider, dataset, new Timestamp(creationDate.getTime()), new Timestamp(date.getTime()), dataset);
 
         session.execute("DELETE FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SETS_UPDATED + " WHERE "
                         + McsConstansts.PROVIDER_ID + "=?" + " AND " + McsConstansts.DATASET_ID + "=?" + " AND " + McsConstansts.UPDATED_TIMESTAMP + "=?"
-                , provider, dataset, updated_timestamp);
+                , provider, dataset, new Timestamp(updated_timestamp.getTime()));
         session.execute(
                 "INSERT INTO " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SETS_UPDATED +
                         " (" + McsConstansts.PROVIDER_ID + ", " + McsConstansts.DATASET_ID + ", " + McsConstansts.CREATION_DATE + ", " + McsConstansts.UPDATED_TIMESTAMP + ", " + McsConstansts.DESCRIPTION + ") " +
                         "VALUES (?, ?, ?, ?, ?)",
-                provider, dataset, creationDate, new Timestamp(date.getTime()), dataset);
+                provider, dataset, new Timestamp(creationDate.getTime()), new Timestamp(date.getTime()), dataset);
     }
 
     public static void populateAssignments(Session session, String  provider, String dataset, String schema, List<String> cloudIds, String revisionPrefix, int batch)

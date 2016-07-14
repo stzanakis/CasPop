@@ -54,12 +54,18 @@ public class XsltWorkflow {
     public static List<ResultSet> retrieveRepresentations(Session session, List<String> cloudIds, String schema, String revision)
     {
         ArrayList<ResultSet> resultSets = new ArrayList<>();
-        for (String cloudId : cloudIds) {
-            ResultSet resultSet = session.execute("SELECT * FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.REPRESENTATION_REVISIONS
-                    + " WHERE " + McsConstansts.CLOUD_ID + "=?" + " AND " + McsConstansts.SCHEMA_ID + "=?" + " AND " + McsConstansts.REVISION_ID + "=?"
-                    , cloudId, schema, revision);
-            resultSets.add(resultSet);
+        StringBuilder stringBuilder = new StringBuilder("SELECT * FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.REPRESENTATION_REVISIONS
+                + " WHERE " + McsConstansts.CLOUD_ID + " IN (");
+        for (int i =0; i < cloudIds.size(); i++) {
+            String cloudId = cloudIds.get(i);
+            if(i == (cloudIds.size()-1))
+                stringBuilder.append("'" + cloudId + "'");
+            else
+                stringBuilder.append("'" + cloudId + "',");
         }
+        stringBuilder.append(") AND " + McsConstansts.SCHEMA_ID + "='" + schema + "' AND " + McsConstansts.REVISION_ID + "='" + revision + "'");
+        ResultSet execute = session.execute(stringBuilder.toString());
+
         return resultSets;
     }
 

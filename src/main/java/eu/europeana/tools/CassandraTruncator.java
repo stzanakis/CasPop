@@ -43,7 +43,7 @@ public class CassandraTruncator {
         long startTime = System.currentTimeMillis();
 
         String query = "SELECT * FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SET_ASSIGNMENTS_PROVIDER_DATASET_REVISION + " WHERE "
-                + McsConstansts.PROVIDER_ID + "='" + provider + "' AND " + McsConstansts.DATASET_ID + "='" + dataset + "'";
+                + McsConstansts.PROVIDER_ID + "='" + provider + "' AND " + McsConstansts.DATASET_ID + "='" + dataset + "'" + " AND " + McsConstansts.SCHEMA_ID + "='" + schema + "'";
 
         List<String> cloudIds = new ArrayList<String>(fetchSize);
         Statement stmt = new SimpleStatement(query);
@@ -70,9 +70,9 @@ public class CassandraTruncator {
         }
 
         session.execute("DELETE FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SET_ASSIGNMENTS_PROVIDER_DATASET_REVISION + " WHERE "
-                + McsConstansts.PROVIDER_ID + "=?" + " AND " + McsConstansts.DATASET_ID + "=?", provider, dataset);
+                + McsConstansts.PROVIDER_ID + "=?" + " AND " + McsConstansts.DATASET_ID + "=?" + " AND " + McsConstansts.SCHEMA_ID + "=?", provider, dataset, schema);
         session.execute("DELETE FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SET_ASSIGNMENTS_PROVIDER_DATASET_SCHEMA + " WHERE "
-                + McsConstansts.PROVIDER_ID + "=?" + " AND " + McsConstansts.DATASET_ID + "=?", provider, dataset);
+                + McsConstansts.PROVIDER_ID + "=?" + " AND " + McsConstansts.DATASET_ID + "=?" + " AND " + McsConstansts.SCHEMA_ID + "=?", provider, dataset, schema);
 
         long stopTime = System.currentTimeMillis();
         long elapsedTime = stopTime - startTime;
@@ -86,7 +86,7 @@ public class CassandraTruncator {
             PreparedStatement ps1 = session.prepare("DELETE FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATA_SET_ASSIGNMENTS_CLOUD_ID + " WHERE "
                     + McsConstansts.CLOUD_ID + "=?" + " AND " + McsConstansts.PROVIDER_ID + "=?" + " AND " + McsConstansts.DATASET_ID + "=?" + " AND " + McsConstansts.SCHEMA_ID + "=?");
             PreparedStatement ps2 = session.prepare("DELETE FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.REPRESENTATION_REVISIONS + " WHERE "
-                    + McsConstansts.CLOUD_ID + "=?");
+                    + McsConstansts.CLOUD_ID + "=?" + " AND " + McsConstansts.SCHEMA_ID + "=?");
             PreparedStatement ps3 = session.prepare("DELETE FROM " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.REPRESENTATION_REVISIONS_TIMESTAMP + " WHERE "
                     + McsConstansts.CLOUD_ID + "=?" + " AND " + McsConstansts.SCHEMA_ID + "=?");
             BatchStatement batch1 = new BatchStatement();
@@ -95,7 +95,7 @@ public class CassandraTruncator {
             for (int i = j; i < j + batch; i++) {
                 String cloudId = cloudIds.get(i-1);
                 batch1.add(ps1.bind(cloudId, provider, dataset, schema));
-                batch2.add(ps2.bind(cloudId));
+                batch2.add(ps2.bind(cloudId, schema));
                 batch3.add(ps3.bind(cloudId, schema));
             }
             session.execute(batch1);

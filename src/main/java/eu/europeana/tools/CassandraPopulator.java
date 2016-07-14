@@ -75,7 +75,7 @@ public class CassandraPopulator {
         session.execute(
                 "INSERT INTO " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.DATASET_SCHEMAS +
                         " (" + McsConstansts.PROVIDER_ID + ", " + McsConstansts.DATASET_ID + ", " + McsConstansts.SCHEMA_ID + ", " + McsConstansts.CREATION_DATE + ", " + McsConstansts.UPDATED_TIMESTAMP + ") " +
-                        "VALUES (?, ?, ?)",
+                        "VALUES (?, ?, ?, ?, ?)",
                 provider, dataset, schema, new Timestamp(date.getTime()), new Timestamp(date.getTime()));
     }
 

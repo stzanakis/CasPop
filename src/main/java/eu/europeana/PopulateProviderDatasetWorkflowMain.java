@@ -20,11 +20,9 @@ public class PopulateProviderDatasetWorkflowMain {
         String dataset2 = "dataset2";
         String schema1 = "schema1";
 
-
-
         int runTimes = 1;
         long totalRunsElapsedTime = 0;
-        int totalRecords = 1000;
+        int totalRecords = 100000;
         int batch = 100;
         int sleepTime = 5000;
         try(CassandraConnector cassandraConnector = CassandraConnector.getInstance(); Session session = cassandraConnector.getSession()) {

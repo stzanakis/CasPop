@@ -3,7 +3,6 @@ package eu.europeana;
 import com.datastax.driver.core.Session;
 import eu.europeana.tools.CassandraConnector;
 import eu.europeana.tools.CassandraPopulator;
-import eu.europeana.tools.CassandraTruncator;
 import eu.europeana.tools.CopyWorkflow;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -35,7 +34,7 @@ public class CopyWorkflowMain {
         int sleepTime = 5000;
         int fetchSize = 1000;
         int rowsThreshold = 500;
-        int limit = 1000;
+        int limit = 100000;
         for(int i = 0; i < runTimes; i++) {
             long startTime = System.currentTimeMillis();
             CopyWorkflow.copyFromProviderDatasetPublished(session, providerFrom, providerTo, datasetFrom, datasetTo, schema1, fetchSize, rowsThreshold, limit, batch);

@@ -32,7 +32,7 @@ public class CassandraPopulator {
     {
         ArrayList<String> cloudIds = new ArrayList<String>(batch);
         for(int i = 1; i <= totalRecords; i++) {
-                cloudIds.add(Integer.toString(i));
+            cloudIds.add(Integer.toString(i));
         }
 
         long startTime = System.currentTimeMillis();
@@ -182,6 +182,42 @@ public class CassandraPopulator {
 
                 //representation_revision_timestamp
                 batch2.add(ps2.bind(cloudId, schema, UUIDs.timeBased(), revisionUpload, provider, true, new Timestamp(date.getTime()), new Timestamp(date.getTime())));
+            }
+            session.execute(batch1);
+            session.execute(batch2);
+
+            long stopTime = System.currentTimeMillis();
+            long elapsedTime = stopTime - startTime;
+            logger.info("Populated batch: " + batch + " representations for provider " + provider + " in: " + elapsedTime + "ms. Until now populated: " + (batch + j-1));
+        }
+
+    }
+
+    public static void populateRepresentations(Session session, String provider, String schema, List<String> cloudIds, List<String> versionIds, String revisionPrefix, int batch)
+    {
+        Date date = new Date();
+        String revisionUpload = revisionPrefix + "-1";
+
+        int totalRecords = cloudIds.size();
+        for(int j = 1; j <= totalRecords; j+=batch) {
+            long startTime = System.currentTimeMillis();
+            PreparedStatement ps1 = session.prepare("INSERT INTO " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.REPRESENTATION_REVISIONS +
+                    " (" + McsConstansts.CLOUD_ID + ", " + McsConstansts.SCHEMA_ID + ", " + McsConstansts.VERSION_ID + ", " + McsConstansts.REVISION_ID + ", " + McsConstansts.PROVIDER_ID + ", " + McsConstansts.PERSISTENT + ", " + McsConstansts.CREATION_DATE + ", " + McsConstansts.REVISION_TIMESTAMP + ") " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            PreparedStatement ps2 = session.prepare("INSERT INTO " + McsConstansts.KEYSPACEMCS + "." + McsConstansts.REPRESENTATION_REVISIONS_TIMESTAMP +
+                    " (" + McsConstansts.CLOUD_ID + ", " + McsConstansts.SCHEMA_ID + ", " + McsConstansts.VERSION_ID + ", " + McsConstansts.REVISION_ID + ", " + McsConstansts.PROVIDER_ID + ", " + McsConstansts.PERSISTENT + ", " + McsConstansts.CREATION_DATE + ", " + McsConstansts.REVISION_TIMESTAMP + ") " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            BatchStatement batch1 = new BatchStatement();
+            BatchStatement batch2 = new BatchStatement();
+            for (int i = j; i < j + batch; i++) {
+
+                String cloudId = cloudIds.get(i-1);
+                String versionId = versionIds.get(i-1);
+                //representation_revisions
+                batch1.add(ps1.bind(cloudId, schema, versionId, revisionUpload, provider, true, new Timestamp(date.getTime()), new Timestamp(date.getTime())));
+
+                //representation_revision_timestamp
+                batch2.add(ps2.bind(cloudId, schema, versionId, revisionUpload, provider, true, new Timestamp(date.getTime()), new Timestamp(date.getTime())));
             }
             session.execute(batch1);
             session.execute(batch2);
